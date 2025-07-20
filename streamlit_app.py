@@ -15,7 +15,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
 # Import and run the main app
-from app import *
+from app import main
 
-# The app.py file already contains the Streamlit app code
-# This file just ensures proper path resolution for Streamlit Cloud 
+if __name__ == "__main__":
+    main() 

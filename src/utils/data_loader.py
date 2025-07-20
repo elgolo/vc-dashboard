@@ -6,18 +6,13 @@ Data loading and processing utilities for the VC Software Reddit Dashboard.
 """
 
 import pandas as pd
+import streamlit as st
 from collections import Counter
 from datetime import datetime
 
-# Remove streamlit dependency by using a simple cache implementation
-_data_cache = {}
-
+@st.cache_data
 def load_data():
     """Load and preprocess the Reddit data from Master_Raw_Data_UPDATED."""
-    # Check if data is already cached
-    if 'reddit_data' in _data_cache:
-        return _data_cache['reddit_data']
-        
     try:
         # Try to load from the src/data directory (for deployment)
         df = pd.read_excel('src/data/20250718_Master_Raw_Data_UPDATED.xlsx', sheet_name='RAWDATA')
@@ -44,9 +39,6 @@ def load_data():
     # Add an ID column if it doesn't exist
     if 'id' not in df.columns:
         df['id'] = range(len(df))
-    
-    # Cache the data
-    _data_cache['reddit_data'] = df
         
     return df
 
