@@ -118,7 +118,6 @@ venv.bak/
 *.xls
 *.numbers
 *.csv
-data/
 
 # Exception for deployment data file
 !src/data/20250718_Master_Raw_Data_UPDATED.xlsx 
