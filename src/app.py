@@ -301,6 +301,44 @@ def main():
         # Combined posts and raw data functionality
         display_combined_posts_data(filtered_df)
 
+    # Exposure Comparison Section - Collapsible
+    with st.expander("Exposure Comparison", expanded=False):
+        """
+        /// Scatter plot and ratio table for positive vs negative exposure for selected software.
+        """
+        # Compute positive and negative exposure for each selected software
+        exposure_data = []
+        for software in selected_software:
+            sw_df = filtered_df[filtered_df['matched_terms'].str.contains(software, case=False, na=False)]
+            pos_exposure = sw_df[sw_df['textblob_sentiment'] == 'positive']['score'].sum()
+            neg_exposure = sw_df[sw_df['textblob_sentiment'] == 'negative']['score'].sum()
+            exposure_data.append({
+                'Software': software,
+                'Positive Exposure': pos_exposure,
+                'Negative Exposure': neg_exposure,
+                'Ratio (Pos/Neg)': pos_exposure / neg_exposure if neg_exposure != 0 else float('inf')
+            })
+        exposure_df = pd.DataFrame(exposure_data)
+
+        # Scatter plot
+        st.subheader("Positive vs Negative Exposure (Scatter Plot)")
+        scatter_fig = px.scatter(
+            exposure_df,
+            x='Positive Exposure',
+            y='Negative Exposure',
+            text='Software',
+            labels={'Positive Exposure': 'Positive Exposure', 'Negative Exposure': 'Negative Exposure'},
+            title="Positive vs Negative Exposure for Selected Software"
+        )
+        scatter_fig.update_traces(textposition='top center')
+        st.plotly_chart(scatter_fig, use_container_width=True)
+
+        # Ratio table
+        st.subheader("Positive to Negative Exposure Ratio Table")
+        ratio_table = exposure_df[['Software', 'Positive Exposure', 'Negative Exposure', 'Ratio (Pos/Neg)']].copy()
+        ratio_table['Ratio (Pos/Neg)'] = ratio_table['Ratio (Pos/Neg)'].replace(float('inf'), '∞')
+        st.dataframe(ratio_table, use_container_width=True)
+
     # Footer
     st.markdown("---")
     st.markdown("VC Software Reddit Analysis Dashboard | Created with Streamlit")
