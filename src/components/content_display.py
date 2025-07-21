@@ -506,10 +506,7 @@ def display_combined_posts_data(df):
     start_idx = (st.session_state.current_page - 1) * results_per_page
     end_idx = min(start_idx + results_per_page, total_posts)
     display_posts = filtered_posts.iloc[start_idx:end_idx]
-    
-    # Display posts (limit to 20 for performance)
-    display_posts = filtered_posts.head(20)
-    
+
     # Display posts with improved text display
     for idx, (_, post) in enumerate(display_posts.iterrows()):
         with st.container():

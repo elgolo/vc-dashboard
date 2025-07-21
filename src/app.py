@@ -296,13 +296,7 @@ def main():
         # Display Exposure Diverging Chart
         display_exposure_diverging_chart(filtered_df, selected_software)
 
-    # Posts & Raw Data Section - Collapsible
-    with st.expander("Posts & Raw Data", expanded=True):
-        # Combined posts and raw data functionality
-        display_combined_posts_data(filtered_df)
-
-    # Exposure Comparison Section - Collapsible
-    with st.expander("Exposure Comparison", expanded=False):
+        # Exposure Comparison Section
         """
         /// Scatter plot and ratio table for positive vs negative exposure for selected software.
         """
@@ -338,6 +332,11 @@ def main():
         ratio_table = exposure_df[['Software', 'Positive Exposure', 'Negative Exposure', 'Ratio (Pos/Neg)']].copy()
         ratio_table['Ratio (Pos/Neg)'] = ratio_table['Ratio (Pos/Neg)'].replace(float('inf'), '∞')
         st.dataframe(ratio_table, use_container_width=True)
+
+    # Posts & Raw Data Section - Collapsible
+    with st.expander("Posts & Raw Data", expanded=True):
+        # Combined posts and raw data functionality
+        display_combined_posts_data(filtered_df)
 
     # Footer
     st.markdown("---")
