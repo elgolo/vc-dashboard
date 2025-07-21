@@ -1017,3 +1017,96 @@ def display_exposure_diverging_chart(df, software_list):
         <span style="color: #4CAF50;">Right (Green):</span> Score sum for posts with positive sentiment
     </div>
     """, unsafe_allow_html=True) 
+
+def display_exposure_scatter_and_ratio(df, software_list):
+    """
+    Display a scatter plot of positive vs negative exposure and a ratio table for selected software.
+    Positive/Negative Exposure is the sum of post scores for posts tagged as positive/negative (see tag logic in diverging chart).
+    """
+    st.subheader("Positive vs Negative Exposure: Scatter Plot & Ratio Table")
+    st.markdown('<div class="chart-description">Each point is a software. X = Positive Exposure (sum of post scores for positive mentions), Y = Negative Exposure (sum for negative mentions). The table shows the ratio of positive to negative exposure.</div>', unsafe_allow_html=True)
+
+    if not software_list:
+        st.warning("No software selected to display.")
+        return
+
+    # Define negative tags
+    negative_tags = [
+        "complains about [software] functionality",
+        "complains about [software] pricing",
+        "asks for alternative to [software]"
+    ]
+    # Define positive tags
+    positive_tags = [
+        "describes [software] positively",
+        "recommends/suggests [software]",
+        "used [software] to report findings",
+        "evaluates [software] for use",
+        "considering [software] for use"
+    ]
+
+    # Calculate exposures
+    results = {
+        'Software': [],
+        'Positive_Exposure': [],
+        'Negative_Exposure': [],
+        'Ratio': []
+    }
+    for software in software_list:
+        results['Software'].append(software)
+        software_df = df[df['matched_terms'].str.lower().str.contains(software.lower(), na=False)]
+        pos_exp = 0
+        neg_exp = 0
+        for _, row in software_df.iterrows():
+            if pd.notna(row.get('AI_Summary')) and pd.notna(row.get('score')):
+                summary = row['AI_Summary'].lower()
+                score = row['score']
+                is_negative = False
+                for tag in negative_tags:
+                    pattern = tag.replace('[software]', software.lower())
+                    if pattern in summary:
+                        neg_exp += score
+                        is_negative = True
+                        break
+                if not is_negative:
+                    for tag in positive_tags:
+                        pattern = tag.replace('[software]', software.lower())
+                        if pattern in summary:
+                            pos_exp += score
+                            break
+        results['Positive_Exposure'].append(pos_exp)
+        results['Negative_Exposure'].append(neg_exp)
+        # Ratio: handle div by zero
+        if neg_exp == 0:
+            ratio = float('inf') if pos_exp > 0 else 0
+        else:
+            ratio = pos_exp / neg_exp
+        results['Ratio'].append(ratio)
+
+    result_df = pd.DataFrame(results)
+
+    # Scatter plot
+    fig = px.scatter(
+        result_df,
+        x='Positive_Exposure',
+        y='Negative_Exposure',
+        text='Software',
+        color='Software',
+        size_max=60,
+        title="Software: Positive vs Negative Exposure (Scatter Plot)",
+        labels={
+            'Positive_Exposure': 'Positive Exposure (Score Sum)',
+            'Negative_Exposure': 'Negative Exposure (Score Sum)',
+            'Software': 'Software'
+        }
+    )
+    fig.update_traces(textposition='top center', marker=dict(size=16, line=dict(width=2, color='DarkSlateGrey')))
+    fig.update_layout(height=500)
+    st.plotly_chart(fig, use_container_width=True)
+
+    # Ratio table
+    display_df = result_df.copy()
+    display_df['Ratio'] = display_df['Ratio'].replace(float('inf'), '∞')
+    display_df = display_df[['Software', 'Positive_Exposure', 'Negative_Exposure', 'Ratio']]
+    st.markdown("**Positive/Negative Exposure Ratio Table**")
+    st.dataframe(display_df, use_container_width=True) 
