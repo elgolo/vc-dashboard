@@ -1101,12 +1101,62 @@ def display_exposure_scatter_and_ratio(df, software_list):
         }
     )
     fig.update_traces(textposition='top center', marker=dict(size=16, line=dict(width=2, color='DarkSlateGrey')))
-    fig.update_layout(height=500)
+    fig.update_layout(
+        height=500,
+        xaxis=dict(range=[0, result_df['Positive_Exposure'].max() * 1.1]),
+        yaxis=dict(range=[0, result_df['Negative_Exposure'].max() * 1.1])
+    )
     st.plotly_chart(fig, use_container_width=True)
 
-    # Ratio table
+    # Ratio table - more compact and visually appealing
     display_df = result_df.copy()
-    display_df['Ratio'] = display_df['Ratio'].replace(float('inf'), '∞')
-    display_df = display_df[['Software', 'Positive_Exposure', 'Negative_Exposure', 'Ratio']]
-    st.markdown("**Positive/Negative Exposure Ratio Table**")
-    st.dataframe(display_df, use_container_width=True) 
+    
+    # Format ratio to 2 decimal places, handle infinity
+    def format_ratio(ratio):
+        if ratio == float('inf'):
+            return '∞'
+        elif ratio == 0:
+            return '0.00'
+        else:
+            return f'{ratio:.2f}'
+    
+    display_df['Ratio_Formatted'] = display_df['Ratio'].apply(format_ratio)
+    display_df['Positive_Exposure_Formatted'] = display_df['Positive_Exposure'].apply(lambda x: f'{x:,.0f}')
+    display_df['Negative_Exposure_Formatted'] = display_df['Negative_Exposure'].apply(lambda x: f'{x:,.0f}')
+    
+    # Create compact table with better formatting
+    table_data = []
+    for _, row in display_df.iterrows():
+        table_data.append({
+            'Software': row['Software'],
+            'Positive': row['Positive_Exposure_Formatted'],
+            'Negative': row['Negative_Exposure_Formatted'],
+            'Ratio': row['Ratio_Formatted']
+        })
+    
+    # Display as a styled table
+    st.markdown("**Positive/Negative Exposure Ratio**")
+    
+    # Create a more compact table using columns
+    col1, col2, col3, col4 = st.columns(4)
+    
+    # Header
+    with col1:
+        st.markdown("**Software**")
+    with col2:
+        st.markdown("**Positive**")
+    with col3:
+        st.markdown("**Negative**")
+    with col4:
+        st.markdown("**Ratio**")
+    
+    # Data rows
+    for row in table_data:
+        with col1:
+            st.write(row['Software'])
+        with col2:
+            st.write(row['Positive'])
+        with col3:
+            st.write(row['Negative'])
+        with col4:
+            st.write(row['Ratio']) 
