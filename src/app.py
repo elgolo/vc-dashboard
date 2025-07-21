@@ -120,7 +120,7 @@ def main():
 
     # Header
     st.markdown('<div class="main-header">VC Software Reddit Analysis Dashboard</div>', unsafe_allow_html=True)
-    st.write("This dashboard summarizes Reddit mentions of venture capital (VC) software tools across two subreddits. Each post is analyzed for sentiment, exposure (via post score), and how the tool is discussed — whether it's recommended, criticized, considered, or simply mentioned." +
+    st.write("This dashboard summarizes Reddit mentions of venture capital (VC) software tools across two subreddits. Each post is analyzed for positive and negative sentiment, exposure (via post score), and how the tool is discussed — whether it's recommended, praised, considered, or criticized." +
     "\n\n Note: Data is based on public posts from two VC-related subreddits. Due to API limitations, results reflect a sample of discussions, not the full universe of Reddit activity." +
     "\n\n To see other projects that may interest you please visit my website at www.hasanelgohary.com")
 
@@ -131,7 +131,10 @@ def main():
     matched_term_counts = extract_matched_terms(df)
     # Convert Counter to list of tuples before creating DataFrame
     term_counts_list = list(matched_term_counts.most_common())
-    matched_term_df = pd.DataFrame(term_counts_list, columns=['Term', 'Count'])
+    if term_counts_list and isinstance(term_counts_list[0], tuple):
+        matched_term_df = pd.DataFrame(term_counts_list, columns=['Term', 'Count'])
+    else:
+        matched_term_df = pd.DataFrame({'Term': [], 'Count': []})
 
     # Get software terms (excluding general terms)
     general_terms = ['software', 'fund', 'experience', 'phone']
@@ -147,21 +150,34 @@ def main():
     st.sidebar.markdown("### Software Selection")
 
     # Chart preset options
-    preset_options = ["Top 5 Most Mentioned Software", "All Software", "Custom Selection"]
+    preset_options = ["Top 5 Softwares", "All Software", "Custom Selection"]
     chart_preset = st.sidebar.radio("Chart Display Mode:", preset_options, horizontal=True, index=0)
 
     # Custom selection if chosen
-    selected_software = top_software.copy()
+    # --- Top 5 Softwares logic ---
+    # Get top 4 most mentioned software (excluding 'aumni')
+    top_4 = [s for s in software_terms['Term'].tolist() if s.lower() != 'aumni'][:4]
+    # Check if 'aumni' is in the list, if not, add it
+    all_software_lower = [s.lower() for s in all_software]
+    if 'aumni' in all_software_lower:
+        aumni_actual = all_software[all_software_lower.index('aumni')]
+    else:
+        aumni_actual = 'aumni'  # fallback, should not happen if data is correct
+    top_5_softwares = top_4.copy()
+    if aumni_actual not in top_5_softwares:
+        top_5_softwares.append(aumni_actual)
+
+    selected_software = top_5_softwares.copy()
     if chart_preset == "All Software":
         selected_software = all_software
     elif chart_preset == "Custom Selection":
         selected_software = st.sidebar.multiselect(
             "Select Software to Display:", 
             options=all_software,
-            default=top_software
+            default=top_5_softwares
         )
         if not selected_software:  # If nothing selected, default to top 5
-            selected_software = top_software
+            selected_software = top_5_softwares
 
     # Display selected software count in sidebar
     st.sidebar.markdown(f"**{len(selected_software)} software** selected")
@@ -235,7 +251,8 @@ def main():
 
     # Extract all matched terms for the filtered data
     all_matched_terms = []
-    for terms in filtered_df['matched_terms'].dropna():
+    matched_terms_series = pd.Series(filtered_df['matched_terms'])
+    for terms in matched_terms_series.dropna():
         if isinstance(terms, str):
             terms_list = [term.strip().lower() for term in terms.split(',')]
             all_matched_terms.extend(terms_list)
@@ -243,7 +260,10 @@ def main():
     # Get matched terms and keywords for the current filtered data
     filtered_matched_terms = extract_matched_terms(filtered_df)
     term_counts_list = list(filtered_matched_terms.most_common())
-    filtered_term_df = pd.DataFrame(term_counts_list, columns=['Term', 'Count'])
+    if term_counts_list and isinstance(term_counts_list[0], tuple):
+        filtered_term_df = pd.DataFrame(term_counts_list, columns=['Term', 'Count'])
+    else:
+        filtered_term_df = pd.DataFrame({'Term': [], 'Count': []})
 
     # Always filter the term dataframe to only include selected software
     filtered_term_df = filtered_term_df[filtered_term_df['Term'].isin(selected_software)]
